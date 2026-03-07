@@ -18,7 +18,6 @@
 	import OrbytSettingsPanel from '$lib/components/OrbytSettingsPanel.svelte';
 	import CanvasStylePicker from '$lib/components/CanvasStylePicker.svelte';
 	import ViewerAvatars from '$lib/components/ViewerAvatars.svelte';
-	import WellnessPanel from '$lib/components/WellnessPanel.svelte';
 	import { TextBlock } from '$lib/canvas/objects/TextBlock';
 
 	let canvasContainer: HTMLDivElement;
@@ -64,7 +63,6 @@
 	let stickerPickerState = $state<{ objectId: string; x: number; y: number } | null>(null);
 	let selectedPhoto = $state<any>(null);
 	let showAddMusic = $state(false);
-	let showWellness = $state(false);
 	let settingsCanvas = $state<{ id: string; name: string } | null>(null);
 	let playingMusicId = $state<string | null>(null);
 	let overlayMode = $state<'none' | 'dots' | 'lines'>('none');
@@ -574,7 +572,6 @@
 		if (e.key !== 'Escape') return;
 		// Close the topmost open modal (order: overlays first, then panels, then pickers)
 		if (settingsCanvas) { settingsCanvas = null; return; }
-		if (showWellness) { showWellness = false; return; }
 		if (inlineEditState) { closeInlineEditor(); return; }
 		if (showAddMusic) { showAddMusic = false; return; }
 		if (showCreateBeacon) { showCreateBeacon = false; return; }
@@ -946,6 +943,7 @@
 		iframe.src = url;
 		iframe.allow = 'autoplay; encrypted-media';
 		iframe.setAttribute('frameborder', '0');
+		iframe.sandbox.add('allow-same-origin', 'allow-scripts', 'allow-popups');
 
 		if (isMorph && renderer) {
 			// Morph: wrap iframe in draggable container, center on card
@@ -1050,7 +1048,6 @@
 		onCreateBeacon={() => { showCreateBeacon = true; }}
 		onAddPhoto={addPhoto}
 		onAddMusic={() => { showAddMusic = true; }}
-		onWellness={() => { showWellness = true; }}
 		onNavigateToFriend={(friendUuid, displayName) => {
 			const canvas = accessibleCanvases.data?.find((c: any) => c.ownerId === friendUuid && c.type === 'personal');
 			if (canvas) {
@@ -1078,7 +1075,6 @@
 		onCreateBeacon={() => {}}
 		onAddPhoto={() => {}}
 		onAddMusic={() => {}}
-		onWellness={() => {}}
 		activeCanvasId={null}
 		canvases={undefined}
 		onSelectCanvas={() => {}}
@@ -1202,9 +1198,4 @@
 	/>
 {/if}
 
-{#if showWellness}
-	<WellnessPanel
-		onClose={() => { showWellness = false; }}
-	/>
-{/if}
 

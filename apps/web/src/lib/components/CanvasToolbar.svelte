@@ -16,7 +16,6 @@
 		onCreateBeacon,
 		onAddPhoto,
 		onAddMusic,
-		onWellness,
 		onNavigateToFriend = undefined,
 		friendCode = '',
 		activeCanvasId,
@@ -37,7 +36,6 @@
 		onCreateBeacon: () => void;
 		onAddPhoto: () => void;
 		onAddMusic: () => void;
-		onWellness: () => void;
 		onNavigateToFriend?: (friendUuid: string, displayName: string) => void;
 		friendCode?: string;
 		activeCanvasId: string | null;
@@ -112,8 +110,6 @@
 	let musicNote: SVGElement = $state(undefined!);
 	let musicWave1: SVGElement = $state(undefined!);
 	let musicWave2: SVGElement = $state(undefined!);
-	let wellnessHeart: SVGElement = $state(undefined!);
-	let wellnessPulse: SVGElement = $state(undefined!);
 
 	// Store tweens for cleanup
 	let idleTweens: gsap.core.Tween[] = [];
@@ -174,18 +170,6 @@
 			);
 		}
 
-		// Wellness heart idle — gentle breathe
-		if (wellnessPulse) {
-			idleTweens.push(
-				gsap.to(wellnessPulse, {
-					opacity: 0.7,
-					duration: 1.8,
-					ease: 'sine.inOut',
-					yoyo: true,
-					repeat: -1,
-				})
-			);
-		}
 	});
 
 	onDestroy(() => {
@@ -231,15 +215,6 @@
 		tl.to(musicNote, { rotation: 0, duration: 0.12, ease: 'power2.out' });
 		tl.fromTo(musicWave1, { scale: 0.8, opacity: 0.3, transformOrigin: '50% 50%' }, { scale: 1.2, opacity: 0.9, duration: 0.25, ease: 'power2.out' }, 0);
 		tl.fromTo(musicWave2, { scale: 0.8, opacity: 0.2, transformOrigin: '50% 50%' }, { scale: 1.2, opacity: 0.7, duration: 0.25, ease: 'power2.out' }, 0.08);
-	}
-
-	function wellnessEnter() {
-		if (!wellnessHeart || !wellnessPulse) return;
-		const tl = gsap.timeline();
-		tl.to(wellnessHeart, { scale: 1.2, transformOrigin: '50% 50%', duration: 0.15, ease: 'power2.out' });
-		tl.to(wellnessHeart, { scale: 1, duration: 0.2, ease: 'back.out(2)' });
-		tl.to(wellnessPulse, { scale: 1.4, opacity: 1, transformOrigin: '50% 50%', duration: 0.15, ease: 'power2.out' }, 0);
-		tl.to(wellnessPulse, { scale: 1, opacity: 0.4, duration: 0.2, ease: 'power2.out' }, 0.15);
 	}
 
 	function toggleAccountMenu() {
@@ -423,26 +398,6 @@
 			Music
 		</button>
 	{/if}
-
-	<!-- Wellness button — shows for all authenticated users -->
-	<button
-		onclick={onWellness}
-		onmouseenter={wellnessEnter}
-		class="lego-btn lego-rose flex items-center gap-1.5"
-	>
-		<svg width="18" height="18" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-			<!-- Heart -->
-			<g bind:this={wellnessHeart}>
-				<path d="M10 17.5l-1.2-1.1C4.5 12.4 2 10.1 2 7.3 2 5 3.8 3.2 6 3.2c1.3 0 2.5.6 3.3 1.5.8-.9 2-1.5 3.3-1.5 2.2 0 4 1.8 4 4.1 0 2.8-2.5 5.1-6.8 9.1L10 17.5z" fill="white" opacity="0.95"/>
-			</g>
-			<!-- Pulse wave -->
-			<path bind:this={wellnessPulse}
-				d="M2 10 L5 10 L7 6 L9 14 L11 8 L13 12 L15 10 L18 10"
-				stroke="white" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.4"
-			/>
-		</svg>
-		Wellness
-	</button>
 
 	{#if showAccount}
 		<div class="w-px h-5 bg-white/10"></div>

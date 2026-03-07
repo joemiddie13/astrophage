@@ -250,25 +250,6 @@ html, body {
 	box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2), inset 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-/* Rose — Wellness */
-.lego-rose {
-	background: linear-gradient(180deg, #f472b6 0%, #ec4899 100%);
-	color: white;
-	text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
-	border-bottom: 4px solid #9d174d;
-	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.25);
-}
-
-.lego-rose:hover:not(:disabled) {
-	background: linear-gradient(180deg, #f9a8d4 0%, #f472b6 100%);
-	box-shadow: 0 4px 12px rgba(236, 72, 153, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.3);
-}
-
-.lego-rose:active:not(:disabled) {
-	border-bottom-width: 1px;
-	background: linear-gradient(180deg, #ec4899 0%, #db2777 100%);
-	box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2), inset 0 2px 4px rgba(0, 0, 0, 0.1);
-}
 
 /* ─── Active toggle state (for beacon responses) ─── */
 .lego-emerald.active {

@@ -141,6 +141,13 @@ export default defineSchema({
 		.index("by_created", ["createdAt"])
 		.index("by_sender_created", ["fromUserId", "createdAt"]),
 
+	recoveryAttempts: defineTable({
+		username: v.string(),
+		attemptedAt: v.number(),
+	})
+		.index("by_username", ["username"])
+		.index("by_attempted", ["attemptedAt"]),
+
 	canvasPresence: defineTable({
 		canvasId: v.id("canvases"),
 		userId: v.string(), // UUID

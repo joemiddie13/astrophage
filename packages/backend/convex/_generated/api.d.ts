@@ -9,7 +9,6 @@
  */
 
 import type * as access from "../access.js";
-import type * as ai from "../ai.js";
 import type * as auth from "../auth.js";
 import type * as beacons from "../beacons.js";
 import type * as canvases from "../canvases.js";
@@ -27,7 +26,6 @@ import type * as signaling from "../signaling.js";
 import type * as stickers from "../stickers.js";
 import type * as users from "../users.js";
 import type * as validators from "../validators.js";
-import type * as wellness from "../wellness.js";
 
 import type {
   ApiFromModules,
@@ -37,7 +35,6 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   access: typeof access;
-  ai: typeof ai;
   auth: typeof auth;
   beacons: typeof beacons;
   canvases: typeof canvases;
@@ -55,7 +52,6 @@ declare const fullApi: ApiFromModules<{
   stickers: typeof stickers;
   users: typeof users;
   validators: typeof validators;
-  wellness: typeof wellness;
 }>;
 
 /**

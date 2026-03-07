@@ -2,8 +2,18 @@ import type { Handle } from "@sveltejs/kit";
 import { createAuth } from "$convex/auth.js";
 import { getToken } from "@mmailaender/convex-better-auth-svelte/sveltekit";
 
+// Vite loads .env.local into import.meta.env, not process.env.
+// Better Auth (via createAuth) reads process.env.SITE_URL, so bridge the gap in dev.
+if (import.meta.env.DEV && !process.env.SITE_URL) {
+	process.env.SITE_URL = "http://localhost:5173";
+}
+
 const isDev = process.env.NODE_ENV !== "production";
 
+// TODO: Replace 'unsafe-inline' with SvelteKit nonce-based CSP (kit.csp in svelte.config.js).
+// SvelteKit auto-generates nonces via %sveltekit.nonce% for inline scripts/styles.
+// Blocked by: PixiJS requires 'unsafe-eval' for shader compilation in dev
+// (pixi.js/unsafe-eval shim handles prod). Need to verify Cloudflare adapter compat.
 const csp = [
 	"default-src 'self'",
 	isDev

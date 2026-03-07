@@ -47,9 +47,32 @@ interface MusicMetadata {
 	embedUrl: string;
 }
 
+/** Allowed embed URL domains — validated before storing or rendering */
+const ALLOWED_EMBED_DOMAINS = [
+	"open.spotify.com",
+	"www.youtube.com",
+	"embed.music.apple.com",
+];
+
+/** Allowed platform values */
+const ALLOWED_PLATFORMS = ["spotify", "apple-music", "youtube", "youtube-music"] as const;
+
+/** Validate that an embed URL is from a trusted domain */
+function validateEmbedUrl(url: string): boolean {
+	try {
+		const parsed = new URL(url);
+		if (parsed.protocol !== "https:") return false;
+		return ALLOWED_EMBED_DOMAINS.some(
+			(domain) => parsed.hostname === domain
+		);
+	} catch {
+		return false;
+	}
+}
+
 /** Extract Spotify embed URL from an oEmbed HTML snippet */
 function extractSpotifyEmbedUrl(html: string): string | null {
-	const match = html.match(/src="([^"]+)"/);
+	const match = html.match(/src="(https:\/\/open\.spotify\.com\/embed[^"]+)"/);
 	return match ? match[1] : null;
 }
 
@@ -207,6 +230,12 @@ export const createMusic = mutation({
 		}
 		if (args.artist.length > MAX_MUSIC_ARTIST_LENGTH) {
 			throw new Error(`Artist must be ${MAX_MUSIC_ARTIST_LENGTH} characters or less`);
+		}
+		if (!(ALLOWED_PLATFORMS as readonly string[]).includes(args.platform)) {
+			throw new Error("Invalid platform");
+		}
+		if (!validateEmbedUrl(args.embedUrl)) {
+			throw new Error("Invalid embed URL — must be HTTPS from a trusted music platform");
 		}
 
 		return ctx.db.insert("canvasObjects", {

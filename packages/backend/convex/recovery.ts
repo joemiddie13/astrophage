@@ -65,6 +65,47 @@ export const getUserByUsername = internalQuery({
 	},
 });
 
+const MAX_RECOVERY_ATTEMPTS = 5;
+const RECOVERY_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+
+/** Internal query: check if a username has exceeded recovery attempt rate limit */
+export const checkRecoveryRateLimit = internalQuery({
+	args: { username: v.string() },
+	handler: async (ctx, args) => {
+		const cutoff = Date.now() - RECOVERY_WINDOW_MS;
+		const recentAttempts = await ctx.db
+			.query("recoveryAttempts")
+			.withIndex("by_username", (q) => q.eq("username", args.username))
+			.filter((q) => q.gt(q.field("attemptedAt"), cutoff))
+			.collect();
+		return recentAttempts.length >= MAX_RECOVERY_ATTEMPTS;
+	},
+});
+
+/** Internal mutation: record a recovery attempt */
+export const recordRecoveryAttempt = internalMutation({
+	args: { username: v.string() },
+	handler: async (ctx, args) => {
+		await ctx.db.insert("recoveryAttempts", {
+			username: args.username,
+			attemptedAt: Date.now(),
+		});
+	},
+});
+
+/** Internal mutation: clean up old recovery attempt records (called by cron) */
+export const cleanupRecoveryAttempts = internalMutation({
+	args: {},
+	handler: async (ctx) => {
+		const cutoff = Date.now() - RECOVERY_WINDOW_MS;
+		const stale = await ctx.db
+			.query("recoveryAttempts")
+			.withIndex("by_attempted", (q) => q.lt("attemptedAt", cutoff))
+			.collect();
+		await Promise.all(stale.map((r) => ctx.db.delete(r._id)));
+	},
+});
+
 /** Internal mutation: remove a used recovery code hash from the user's array */
 export const removeUsedRecoveryCode = internalMutation({
 	args: {

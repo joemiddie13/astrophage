@@ -281,7 +281,7 @@
 					height={config.embedHeight}
 					frameborder="0"
 					allow="autoplay; encrypted-media"
-					allowfullscreen
+					sandbox="allow-same-origin allow-scripts allow-popups"
 					loading="lazy"
 					title="{music.content.title} - {config.label} embed"
 					style="border-radius: 8px;"

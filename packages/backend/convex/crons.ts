@@ -24,4 +24,11 @@ crons.interval(
 	internal.presence.cleanupStalePresence
 );
 
+// Clean up expired recovery attempt records every 30 minutes
+crons.interval(
+	"cleanup recovery attempts",
+	{ minutes: 30 },
+	internal.recovery.cleanupRecoveryAttempts
+);
+
 export default crons;

@@ -32,12 +32,24 @@ export const verifyRecoveryCodeAndResetPassword = action({
 				return { success: false, error: "Password must be 10–64 characters" };
 			}
 
-			// Rate limit: max 5 recovery attempts per username per 15 minutes
-			// Uses a simple in-memory approach via Convex scheduler delay
-			// For production: consider a dedicated rate-limit table
 			if (args.username.length < 3 || args.username.length > 30) {
 				return { success: false, error: GENERIC_ERROR };
 			}
+
+			// Rate limit: max 5 recovery attempts per username per 15 minutes
+			const rateLimited = await ctx.runQuery(
+				internal.recovery.checkRecoveryRateLimit,
+				{ username: args.username },
+			);
+			if (rateLimited) {
+				return { success: false, error: "Too many attempts — try again later" };
+			}
+
+			// Record this attempt before checking credentials
+			await ctx.runMutation(
+				internal.recovery.recordRecoveryAttempt,
+				{ username: args.username },
+			);
 
 			// 1. Find user by username
 			const user = await ctx.runQuery(
