@@ -134,6 +134,51 @@ export const verifyAuth = internalQuery({
 	},
 });
 
+/**
+ * Combined initial load query — returns auth user + personal canvas in ONE subscription.
+ * Eliminates the 3-step waterfall: getCurrentUser → getByAuthAccount → getPersonalCanvas
+ */
+export const getUserWithCanvas = query({
+	args: {},
+	handler: async (ctx) => {
+		const authUser = await authComponent.getAuthUser(ctx).catch(() => null);
+		if (!authUser) return null;
+
+		const user = await ctx.db
+			.query("users")
+			.withIndex("by_auth_account", (q) => q.eq("authAccountId", authUser._id))
+			.first();
+
+		if (!user) {
+			// Auth session exists but no Astrophage user record yet (post-signup race)
+			return {
+				uuid: "",
+				username: authUser.name ?? "",
+				displayName: authUser.name ?? "",
+				avatarUrl: undefined as string | undefined,
+				friendCode: undefined as string | undefined,
+				canvasId: null as string | null,
+				canvasName: null as string | null,
+			};
+		}
+
+		const canvas = await ctx.db
+			.query("canvases")
+			.withIndex("by_owner_type", (q) => q.eq("ownerId", user.uuid).eq("type", "personal"))
+			.first();
+
+		return {
+			uuid: user.uuid,
+			username: user.username,
+			displayName: user.displayName,
+			avatarUrl: user.avatarUrl,
+			friendCode: user.friendCode,
+			canvasId: canvas?._id ?? null,
+			canvasName: canvas?.name ?? null,
+		};
+	},
+});
+
 /** Look up an Astrophage user by UUID (auth-protected — returns public fields only) */
 export const getByUuid = query({
 	args: { uuid: v.string() },

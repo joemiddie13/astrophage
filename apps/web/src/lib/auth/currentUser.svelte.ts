@@ -1,54 +1,41 @@
 /**
  * Reactive auth state store using Svelte 5 runes.
  * Components import this to check auth — never Better Auth directly.
+ *
+ * Uses a single combined query (getUserWithCanvas) to eliminate the
+ * 3-step waterfall: getCurrentUser → getByAuthAccount → getPersonalCanvas.
  */
 import { useQuery } from "convex-svelte";
 import { api } from "$convex/_generated/api";
 import type { AuthState, AuthUser } from "./types";
 
-/** Reactive query for the current authenticated Astrophage user */
+/** Reactive query for the current authenticated Astrophage user + personal canvas */
 export function useCurrentUser() {
-	// Get the auth session user from Better Auth via Convex
-	const authUser = useQuery(api.auth.getCurrentUser, {});
+	// Single query: auth check + user lookup + personal canvas — ONE subscription
+	const combined = useQuery(api.users.getUserWithCanvas, {});
 
-	// Once we have the auth user, look up the Astrophage user record
-	const astrophageUser = useQuery(
-		api.users.getByAuthAccount,
-		() => authUser.data?._id ? { authAccountId: authUser.data._id } : "skip"
-	);
-
-	const state: AuthState = $derived.by(() => {
-		if (authUser.isLoading) {
-			return { isAuthenticated: false, isLoading: true, user: null };
+	const state = $derived.by((): AuthState & { canvasId: string | null; canvasName: string | null } => {
+		if (combined.isLoading) {
+			return { isAuthenticated: false, isLoading: true, user: null, canvasId: null, canvasName: null };
 		}
 
-		if (!authUser.data) {
-			return { isAuthenticated: false, isLoading: false, user: null };
+		if (!combined.data) {
+			return { isAuthenticated: false, isLoading: false, user: null, canvasId: null, canvasName: null };
 		}
 
-		// Auth session exists but Astrophage user record still loading
-		if (astrophageUser.isLoading) {
-			return { isAuthenticated: true, isLoading: true, user: null };
-		}
-
-		const astroUser = astrophageUser.data;
+		const d = combined.data;
 		return {
 			isAuthenticated: true,
 			isLoading: false,
-			user: astroUser
-				? {
-						uuid: astroUser.uuid,
-						username: astroUser.username,
-						displayName: astroUser.displayName,
-						avatarUrl: astroUser.avatarUrl,
-						friendCode: astroUser.friendCode,
-					}
-				: {
-						// Fallback if Astrophage record hasn't been created yet
-						uuid: "",
-						username: authUser.data.name ?? "",
-						displayName: authUser.data.name ?? "",
-					},
+			user: {
+				uuid: d.uuid,
+				username: d.username,
+				displayName: d.displayName,
+				avatarUrl: d.avatarUrl,
+				friendCode: d.friendCode,
+			},
+			canvasId: d.canvasId,
+			canvasName: d.canvasName,
 		};
 	});
 
@@ -56,5 +43,7 @@ export function useCurrentUser() {
 		get isAuthenticated() { return state.isAuthenticated; },
 		get isLoading() { return state.isLoading; },
 		get user() { return state.user; },
+		get canvasId() { return state.canvasId; },
+		get canvasName() { return state.canvasName; },
 	};
 }

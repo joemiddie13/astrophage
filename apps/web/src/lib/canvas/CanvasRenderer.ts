@@ -347,7 +347,7 @@ export class CanvasRenderer {
 		}
 	}
 
-	/** Staggered entrance — objects cascade in with alpha + scale, 60ms apart */
+	/** Staggered entrance — objects cascade in with alpha + scale, 30ms apart */
 	private staggerEntrance(containers: Container[]) {
 		for (const c of containers) {
 			c.scale.set(0);
@@ -358,15 +358,15 @@ export class CanvasRenderer {
 		});
 		tl.to(containers.map((c) => c.scale), {
 			x: 1, y: 1,
-			duration: 0.45,
+			duration: 0.35,
 			ease: 'back.out(1.4)',
-			stagger: 0.06,
+			stagger: 0.03,
 		}, 0);
 		tl.to(containers, {
 			alpha: 1,
-			duration: 0.25,
+			duration: 0.2,
 			ease: 'power2.out',
-			stagger: 0.06,
+			stagger: 0.03,
 		}, 0);
 		this.activeStaggerTl = tl;
 	}

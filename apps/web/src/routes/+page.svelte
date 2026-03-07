@@ -80,17 +80,11 @@
 		scale: number;
 	} | null>(null);
 
-	// Query the user's personal canvas once we have their UUID
-	const personalCanvas = useQuery(
-		api.canvases.getPersonalCanvas,
-		() => currentUser.user?.uuid ? { ownerId: currentUser.user.uuid } : 'skip'
-	);
-
-	// Set the active canvas to personal canvas by default
+	// Set the active canvas from the combined query (no separate personalCanvas subscription needed)
 	$effect(() => {
-		if (personalCanvas.data && !activeCanvasId) {
-			activeCanvasId = personalCanvas.data._id;
-			activeCanvasName = personalCanvas.data.name;
+		if (currentUser.canvasId && !activeCanvasId) {
+			activeCanvasId = currentUser.canvasId;
+			activeCanvasName = currentUser.canvasName ?? 'My Orbyt';
 		}
 	});
 
@@ -145,12 +139,37 @@
 		() => activeCanvasId && currentUser.isAuthenticated ? { canvasId: activeCanvasId as any } : 'skip'
 	);
 
-	// Auth settling — persist hint for seamless reloads
+	// Auth settling — reactive (replaces blocking poll in onMount).
+	// Returning users: show spinner until auth resolves or 2.5s timeout.
+	// New visitors: show landing after 300ms if no auth.
+	let authTimeout: ReturnType<typeof setTimeout> | null = null;
 	$effect(() => {
 		if (currentUser.isAuthenticated) {
 			authSettled = true;
 			showLoadingSpinner = false;
 			try { localStorage.setItem(AUTH_HINT_KEY, '1'); } catch {}
+			if (authTimeout) { clearTimeout(authTimeout); authTimeout = null; }
+			return;
+		}
+
+		// Only set timeout once (when renderer is ready but auth hasn't resolved)
+		if (!authSettled && renderer && !authTimeout) {
+			const delay = returningUser ? 2500 : 300;
+			authTimeout = setTimeout(() => {
+				authTimeout = null;
+				if (!currentUser.isAuthenticated && !landingInitialized) {
+					authSettled = true;
+					showLoadingSpinner = false;
+					landingInitialized = true;
+					landingMode = true;
+					renderer.enterLandingMode();
+					overlayMode = 'dots';
+					if (returningUser) {
+						try { localStorage.removeItem(AUTH_HINT_KEY); } catch {}
+						returningUser = false;
+					}
+				}
+			}, delay);
 		}
 	});
 
@@ -331,58 +350,12 @@
 		renderer = new CanvasRenderer();
 		await renderer.init(canvasContainer);
 
-		// Decide auth flow based on returning user hint:
-		// - Returning user (localStorage hint): show spinner on deep space, wait up to 2.5s
-		// - New visitor (no hint): show landing page almost immediately
+		// Settle auth non-blockingly — event handlers wire up immediately below.
+		// The reactive $effect (settleAuth) handles landing/spinner transitions.
 		if (currentUser.isAuthenticated) {
 			authSettled = true;
 		} else if (returningUser) {
-			// Returning user — show subtle loading spinner, give auth time to propagate
 			showLoadingSpinner = true;
-			await new Promise<void>((resolve) => {
-				const checkInterval = setInterval(() => {
-					if (currentUser.isAuthenticated) {
-						clearInterval(checkInterval);
-						resolve();
-					}
-				}, 50);
-				setTimeout(() => {
-					clearInterval(checkInterval);
-					resolve();
-				}, 2500);
-			});
-			authSettled = true;
-			showLoadingSpinner = false;
-			// If auth still failed, session expired — clear hint, show landing
-			if (!currentUser.isAuthenticated && !landingInitialized) {
-				try { localStorage.removeItem(AUTH_HINT_KEY); } catch {}
-				returningUser = false;
-				landingInitialized = true;
-				landingMode = true;
-				renderer.enterLandingMode();
-				overlayMode = 'dots';
-			}
-		} else {
-			// New visitor — brief check then straight to landing
-			await new Promise<void>((resolve) => {
-				const checkInterval = setInterval(() => {
-					if (currentUser.isAuthenticated) {
-						clearInterval(checkInterval);
-						resolve();
-					}
-				}, 50);
-				setTimeout(() => {
-					clearInterval(checkInterval);
-					resolve();
-				}, 300);
-			});
-			authSettled = true;
-			if (!currentUser.isAuthenticated && !landingInitialized) {
-				landingInitialized = true;
-				landingMode = true;
-				renderer.enterLandingMode();
-				overlayMode = 'dots';
-			}
 		}
 
 		// Wire up drag-start → WebRTC broadcast (lift animation on remote)
@@ -596,6 +569,10 @@
 		if (heartbeatInterval) {
 			clearInterval(heartbeatInterval);
 			heartbeatInterval = null;
+		}
+		if (authTimeout) {
+			clearTimeout(authTimeout);
+			authTimeout = null;
 		}
 		if (renderer) renderer.destroy();
 	});
@@ -1190,9 +1167,9 @@
 		onClose={() => { settingsCanvas = null; }}
 		onDeleted={() => {
 			settingsCanvas = null;
-			if (personalCanvas.data) {
-				activeCanvasId = personalCanvas.data._id;
-				activeCanvasName = personalCanvas.data.name;
+			if (currentUser.canvasId) {
+				activeCanvasId = currentUser.canvasId;
+				activeCanvasName = currentUser.canvasName ?? 'My Orbyt';
 			}
 		}}
 	/>
