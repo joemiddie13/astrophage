@@ -18,7 +18,8 @@
       "bundleIdentifier": "life.orbyt.mobile",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
-      }
+      },
+      "buildNumber": "2"
     },
     "android": {
       "adaptiveIcon": {
