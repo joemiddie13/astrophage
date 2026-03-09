@@ -12,6 +12,8 @@
   "dependencies": {
     "@better-auth/expo": "^1.4.9",
     "@convex-dev/better-auth": "^0.10.10",
+    "@expo-google-fonts/space-grotesk": "^0.4.1",
+    "@expo-google-fonts/vt323": "^0.4.1",
     "@expo/vector-icons": "^15.0.3",
     "@orbyt/backend": "*",
     "@react-native-community/datetimepicker": "8.4.4",
@@ -28,6 +30,7 @@
     "expo-splash-screen": "~31.0.13",
     "expo-status-bar": "~3.0.9",
     "expo-web-browser": "~15.0.10",
+    "geist": "^1.7.0",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-native": "0.81.5",

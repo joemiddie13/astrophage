@@ -17,13 +17,11 @@ import DateTimePicker, {
 } from "@react-native-community/datetimepicker";
 import { api } from "@backend/_generated/api";
 
-// --- Validation constants (mirrors packages/backend/convex/validators.ts) ---
 const MAX_TITLE = 200;
 const MAX_DESCRIPTION = 1000;
 const MAX_LOCATION = 500;
 const URL_RE = /https?:\/\/|ftp:\/\//i;
 
-// --- Quick-select helpers ---
 function roundToNext15(date: Date): Date {
   const d = new Date(date);
   const mins = d.getMinutes();
@@ -80,25 +78,22 @@ export default function CreateBeaconScreen() {
   const friends = useQuery(api.friendships.getFriends);
   const createBeacon = useMutation(api.beacons.createMyBeacon);
 
-  // --- Form state ---
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [location, setLocation] = useState("");
   const [startTime, setStartTime] = useState<Date | null>(null);
   const [selectedTimePill, setSelectedTimePill] = useState<number | null>(null);
-  const [selectedDurationPill, setSelectedDurationPill] = useState(1); // default "2 hrs"
+  const [selectedDurationPill, setSelectedDurationPill] = useState(1);
   const [customEndTime, setCustomEndTime] = useState<Date | null>(null);
   const [visibility, setVisibility] = useState<Visibility>("everyone");
   const [selectedFriends, setSelectedFriends] = useState<Set<string>>(new Set());
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // --- Custom picker state ---
   const [showStartPicker, setShowStartPicker] = useState(false);
   const [showEndPicker, setShowEndPicker] = useState(false);
   const [tempPickerDate, setTempPickerDate] = useState(roundToNext15(new Date()));
 
-  // --- Derived values ---
   const computedStart = useMemo(() => {
     if (selectedTimePill !== null && selectedTimePill < TIME_PILLS.length) {
       return TIME_PILLS[selectedTimePill].getTime();
@@ -114,7 +109,6 @@ export default function CreateBeaconScreen() {
 
   const allSelected = friends && friends.length > 0 && selectedFriends.size === friends.length;
 
-  // --- Handlers ---
   function selectTimePill(index: number) {
     setSelectedTimePill(index);
     setStartTime(null);
@@ -254,11 +248,11 @@ export default function CreateBeaconScreen() {
       keyboardShouldPersistTaps="handled"
     >
       {/* --- What --- */}
-      <Text style={styles.sectionLabel}>What</Text>
+      <Text style={styles.sectionLabel}>WHAT</Text>
       <TextInput
         style={[styles.input, errors.title ? styles.inputError : null]}
         placeholder="What's the plan?"
-        placeholderTextColor="#666"
+        placeholderTextColor="#555"
         value={title}
         onChangeText={(t) => {
           setTitle(t);
@@ -271,7 +265,7 @@ export default function CreateBeaconScreen() {
       <TextInput
         style={[styles.input, styles.multiline]}
         placeholder="Description (optional)"
-        placeholderTextColor="#666"
+        placeholderTextColor="#555"
         value={description}
         onChangeText={setDescription}
         multiline
@@ -284,7 +278,7 @@ export default function CreateBeaconScreen() {
       <TextInput
         style={[styles.input, errors.location ? styles.inputError : null]}
         placeholder="Location (optional)"
-        placeholderTextColor="#666"
+        placeholderTextColor="#555"
         value={location}
         onChangeText={(t) => {
           setLocation(t);
@@ -297,7 +291,7 @@ export default function CreateBeaconScreen() {
       ) : null}
 
       {/* --- When --- */}
-      <Text style={[styles.sectionLabel, { marginTop: 20 }]}>When</Text>
+      <Text style={[styles.sectionLabel, { marginTop: 20 }]}>WHEN</Text>
       <View style={styles.pillRow}>
         {TIME_PILLS.map((pill, i) => (
           <Pressable
@@ -345,7 +339,7 @@ export default function CreateBeaconScreen() {
           />
           {Platform.OS === "ios" && (
             <Pressable style={styles.pickerDone} onPress={confirmStartPicker}>
-              <Text style={styles.pickerDoneText}>Done</Text>
+              <Text style={styles.pickerDoneText}>DONE</Text>
             </Pressable>
           )}
         </View>
@@ -359,7 +353,7 @@ export default function CreateBeaconScreen() {
       {errors.time ? <Text style={styles.errorText}>{errors.time}</Text> : null}
 
       {/* Duration */}
-      <Text style={[styles.subLabel, { marginTop: 12 }]}>Duration</Text>
+      <Text style={[styles.subLabel, { marginTop: 12 }]}>DURATION</Text>
       <View style={styles.pillRow}>
         {DURATION_PILLS.map((pill, i) => (
           <Pressable
@@ -406,7 +400,7 @@ export default function CreateBeaconScreen() {
           />
           {Platform.OS === "ios" && (
             <Pressable style={styles.pickerDone} onPress={confirmEndPicker}>
-              <Text style={styles.pickerDoneText}>Done</Text>
+              <Text style={styles.pickerDoneText}>DONE</Text>
             </Pressable>
           )}
         </View>
@@ -419,7 +413,7 @@ export default function CreateBeaconScreen() {
       )}
 
       {/* --- Who can see --- */}
-      <Text style={[styles.sectionLabel, { marginTop: 20 }]}>Who can see</Text>
+      <Text style={[styles.sectionLabel, { marginTop: 20 }]}>SEND TO</Text>
       <View style={styles.visibilityRow}>
         <Pressable
           style={[
@@ -434,7 +428,7 @@ export default function CreateBeaconScreen() {
               visibility === "everyone" && styles.visibilityTextActive,
             ]}
           >
-            Everyone
+            EVERYONE
           </Text>
           <Text style={styles.visibilityHint}>All friends who visit your Orbyt</Text>
         </Pressable>
@@ -451,7 +445,7 @@ export default function CreateBeaconScreen() {
               visibility === "specific" && styles.visibilityTextActive,
             ]}
           >
-            Specific friends
+            SPECIFIC
           </Text>
           <Text style={styles.visibilityHint}>Only people you pick</Text>
         </Pressable>
@@ -464,7 +458,7 @@ export default function CreateBeaconScreen() {
           ) : null}
 
           {friends === undefined ? (
-            <ActivityIndicator color="#fbbf24" style={{ marginVertical: 16 }} />
+            <ActivityIndicator color="#00ff88" style={{ marginVertical: 16 }} />
           ) : friends.length === 0 ? (
             <Text style={styles.emptyText}>
               No friends yet — add friends on the web app
@@ -477,7 +471,7 @@ export default function CreateBeaconScreen() {
                 >
                   {allSelected && <Text style={styles.checkmark}>&#10003;</Text>}
                 </View>
-                <Text style={styles.selectAllText}>Select All</Text>
+                <Text style={styles.selectAllText}>SELECT ALL</Text>
               </Pressable>
 
               {friends.map((friend) => {
@@ -522,7 +516,7 @@ export default function CreateBeaconScreen() {
         {submitting ? (
           <ActivityIndicator color="#0a0a1a" />
         ) : (
-          <Text style={styles.submitButtonText}>Create Beacon</Text>
+          <Text style={styles.submitButtonText}>SEND BEACON</Text>
         )}
       </Pressable>
 
@@ -540,41 +534,41 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   sectionLabel: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#fbbf24",
+    fontFamily: "VT323",
+    fontSize: 20,
+    color: "#00ff88",
     marginBottom: 10,
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
+    letterSpacing: 1,
   },
   subLabel: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#999",
+    fontFamily: "VT323",
+    fontSize: 16,
+    color: "#555",
     marginBottom: 8,
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
+    letterSpacing: 1,
   },
   input: {
-    backgroundColor: "#1a1a2e",
-    borderRadius: 10,
+    backgroundColor: "#0d1117",
+    borderRadius: 4,
     padding: 14,
+    fontFamily: "SpaceGrotesk",
     fontSize: 16,
     color: "#e8e0d4",
     marginBottom: 10,
-    borderWidth: 1,
-    borderColor: "#2a2a3e",
+    borderWidth: 2,
+    borderColor: "#1a3a2a",
   },
   inputError: {
-    borderColor: "#ef4444",
+    borderColor: "#ff3366",
   },
   multiline: {
     minHeight: 80,
     textAlignVertical: "top",
   },
   errorText: {
-    color: "#ef4444",
-    fontSize: 13,
+    fontFamily: "VT323",
+    color: "#ff3366",
+    fontSize: 16,
     marginTop: -6,
     marginBottom: 8,
     marginLeft: 4,
@@ -588,29 +582,30 @@ const styles = StyleSheet.create({
   pill: {
     paddingHorizontal: 14,
     paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: "#1a1a2e",
-    borderWidth: 1,
-    borderColor: "#2a2a3e",
+    borderRadius: 4,
+    backgroundColor: "#0d1117",
+    borderWidth: 2,
+    borderColor: "#1a3a2a",
   },
   pillActive: {
-    backgroundColor: "#fbbf24",
-    borderColor: "#fbbf24",
+    backgroundColor: "#00ff88",
+    borderColor: "#00ff88",
   },
   pillText: {
-    color: "#999",
-    fontSize: 14,
-    fontWeight: "500",
+    fontFamily: "VT323",
+    color: "#555",
+    fontSize: 16,
   },
   pillTextActive: {
     color: "#0a0a1a",
-    fontWeight: "bold",
   },
   pickerContainer: {
-    backgroundColor: "#1a1a2e",
-    borderRadius: 12,
+    backgroundColor: "#0d1117",
+    borderRadius: 4,
     padding: 8,
     marginBottom: 8,
+    borderWidth: 2,
+    borderColor: "#1a3a2a",
   },
   pickerDone: {
     alignSelf: "flex-end",
@@ -618,13 +613,15 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   pickerDoneText: {
-    color: "#fbbf24",
-    fontSize: 16,
-    fontWeight: "bold",
+    fontFamily: "VT323",
+    color: "#00ff88",
+    fontSize: 18,
+    letterSpacing: 1,
   },
   timePreview: {
-    color: "#e8e0d4",
-    fontSize: 14,
+    fontFamily: "VT323",
+    color: "#00ccff",
+    fontSize: 16,
     marginBottom: 4,
     marginLeft: 4,
   },
@@ -635,26 +632,28 @@ const styles = StyleSheet.create({
   },
   visibilityOption: {
     flex: 1,
-    backgroundColor: "#1a1a2e",
-    borderRadius: 12,
+    backgroundColor: "#0d1117",
+    borderRadius: 4,
     padding: 14,
     borderWidth: 2,
-    borderColor: "#2a2a3e",
+    borderColor: "#1a3a2a",
     gap: 4,
   },
   visibilityActive: {
-    borderColor: "#fbbf24",
+    borderColor: "#00ff88",
   },
   visibilityText: {
-    color: "#999",
-    fontSize: 15,
-    fontWeight: "bold",
+    fontFamily: "VT323",
+    color: "#555",
+    fontSize: 18,
+    letterSpacing: 1,
   },
   visibilityTextActive: {
-    color: "#fbbf24",
+    color: "#00ff88",
   },
   visibilityHint: {
-    color: "#666",
+    fontFamily: "SpaceGrotesk",
+    color: "#444",
     fontSize: 12,
   },
   friendList: {
@@ -665,35 +664,36 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 10,
     gap: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#2a2a3e",
+    borderBottomWidth: 1,
+    borderBottomColor: "#1a3a2a",
     marginBottom: 4,
   },
   selectAllText: {
+    fontFamily: "VT323",
     color: "#e8e0d4",
-    fontSize: 15,
-    fontWeight: "600",
+    fontSize: 18,
+    letterSpacing: 1,
   },
   friendRow: {
     flexDirection: "row",
     alignItems: "center",
     paddingVertical: 10,
     gap: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#1a1a2e",
+    borderBottomWidth: 1,
+    borderBottomColor: "#0d1117",
   },
   checkbox: {
     width: 24,
     height: 24,
-    borderRadius: 6,
+    borderRadius: 4,
     borderWidth: 2,
-    borderColor: "#444",
+    borderColor: "#1a3a2a",
     justifyContent: "center",
     alignItems: "center",
   },
   checkboxActive: {
-    backgroundColor: "#fbbf24",
-    borderColor: "#fbbf24",
+    backgroundColor: "#00ff88",
+    borderColor: "#00ff88",
   },
   checkmark: {
     color: "#0a0a1a",
@@ -703,33 +703,37 @@ const styles = StyleSheet.create({
   friendAvatar: {
     width: 36,
     height: 36,
-    borderRadius: 18,
-    backgroundColor: "#2a2a3e",
+    borderRadius: 4,
+    backgroundColor: "#fbbf24",
     justifyContent: "center",
     alignItems: "center",
   },
   friendAvatarText: {
-    color: "#fbbf24",
+    fontFamily: "SpaceGrotesk-Bold",
+    color: "#0a0a1a",
     fontSize: 16,
-    fontWeight: "bold",
   },
   friendName: {
+    fontFamily: "SpaceGrotesk",
     color: "#e8e0d4",
     fontSize: 15,
     flex: 1,
   },
   emptyText: {
-    color: "#666",
-    fontSize: 14,
+    fontFamily: "VT323",
+    color: "#555",
+    fontSize: 16,
     textAlign: "center",
     paddingVertical: 20,
   },
   submitButton: {
     backgroundColor: "#fbbf24",
-    borderRadius: 12,
+    borderRadius: 4,
     padding: 16,
     alignItems: "center",
     marginTop: 24,
+    borderWidth: 2,
+    borderColor: "#fbbf24",
   },
   submitButtonPressed: {
     opacity: 0.8,
@@ -738,8 +742,9 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   submitButtonText: {
+    fontFamily: "VT323",
     color: "#0a0a1a",
-    fontSize: 18,
-    fontWeight: "bold",
+    fontSize: 22,
+    letterSpacing: 2,
   },
 });

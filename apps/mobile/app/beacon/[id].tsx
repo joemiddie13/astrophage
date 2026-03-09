@@ -13,10 +13,10 @@ import type { Id } from "@backend/_generated/dataModel";
 
 type Status = "joining" | "interested" | "declined";
 
-const STATUS_CONFIG: Record<Status, { label: string; emoji: string; color: string }> = {
-  joining: { label: "Joining", emoji: "🙌", color: "#22c55e" },
-  interested: { label: "Interested", emoji: "👀", color: "#fbbf24" },
-  declined: { label: "Can't make it", emoji: "😔", color: "#ef4444" },
+const STATUS_CONFIG: Record<Status, { label: string; color: string }> = {
+  joining: { label: "JOINING", color: "#00ff88" },
+  interested: { label: "MAYBE", color: "#fbbf24" },
+  declined: { label: "PASS", color: "#ff3366" },
 };
 
 function formatDateTime(ts: number): string {
@@ -33,6 +33,12 @@ function formatDateTime(ts: number): string {
   if (isToday) return `Today at ${time}`;
   if (isTomorrow) return `Tomorrow at ${time}`;
   return `${date} at ${time}`;
+}
+
+function isLive(startTime?: number, endTime?: number): boolean {
+  if (!startTime) return false;
+  const now = Date.now();
+  return now >= startTime && (!endTime || now <= endTime);
 }
 
 type BeaconContent = {
@@ -71,49 +77,65 @@ export default function BeaconDetailScreen() {
   if (beacon === undefined || responses === undefined) {
     return (
       <View style={[styles.container, styles.centered]}>
-        <ActivityIndicator color="#fbbf24" size="large" />
+        <ActivityIndicator color="#00ff88" size="large" />
       </View>
     );
   }
 
   const content = (beacon?.content ?? {}) as BeaconContent;
+  const live = isLive(content.startTime, content.endTime);
 
-  // Group responses by status
   const grouped: Record<Status, typeof responses> = {
     joining: responses.filter((r) => r.status === "joining"),
     interested: responses.filter((r) => r.status === "interested"),
     declined: responses.filter((r) => r.status === "declined"),
   };
 
+  const totalResponses = grouped.joining.length + grouped.interested.length;
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       {/* Beacon info */}
       <View style={styles.beaconHeader}>
+        <View style={styles.statusRow}>
+          {live && (
+            <View style={styles.liveBadge}>
+              <Text style={styles.liveBadgeText}>LIVE</Text>
+            </View>
+          )}
+          <Text style={styles.creatorName}>
+            <Text style={styles.dot}>■ </Text>
+            {((beacon as any)?.creatorName ?? "UNKNOWN").toUpperCase()}
+          </Text>
+        </View>
+
         <Text style={styles.beaconTitle}>{content.title ?? "Beacon"}</Text>
+
         {content.description && (
           <Text style={styles.beaconDescription}>{content.description}</Text>
         )}
-        <View style={styles.detailsRow}>
-          {content.startTime && (
-            <View style={styles.detailItem}>
-              <Text style={styles.detailLabel}>When</Text>
-              <Text style={styles.detailValue}>
-                {formatDateTime(content.startTime)}
-                {content.endTime ? ` — ${formatDateTime(content.endTime)}` : ""}
-              </Text>
-            </View>
-          )}
-          {content.locationAddress && (
-            <View style={styles.detailItem}>
-              <Text style={styles.detailLabel}>Where</Text>
-              <Text style={styles.detailValue}>📍 {content.locationAddress}</Text>
-            </View>
-          )}
-        </View>
+
+        {content.startTime && (
+          <Text style={styles.beaconMeta}>
+            <Text style={styles.dot}>■ </Text>
+            {formatDateTime(content.startTime)}
+            {content.endTime ? ` — ${formatDateTime(content.endTime)}` : ""}
+          </Text>
+        )}
+        {content.locationAddress && (
+          <Text style={styles.beaconMeta}>
+            <Text style={styles.dot}>■ </Text>
+            {content.locationAddress}
+          </Text>
+        )}
       </View>
 
       {/* RSVP Buttons */}
-      <Text style={styles.sectionTitle}>Your RSVP</Text>
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>SELECT RESPONSE</Text>
+        <View style={styles.sectionLine} />
+      </View>
+
       <View style={styles.rsvpRow}>
         {(["joining", "interested", "declined"] as Status[]).map((status) => {
           const config = STATUS_CONFIG[status];
@@ -127,7 +149,6 @@ export default function BeaconDetailScreen() {
               ]}
               onPress={() => handleRSVP(status)}
             >
-              <Text style={styles.rsvpEmoji}>{config.emoji}</Text>
               <Text style={[styles.rsvpLabel, { color: config.color }]}>
                 {config.label}
               </Text>
@@ -137,33 +158,39 @@ export default function BeaconDetailScreen() {
       </View>
 
       <Pressable style={styles.clearButton} onPress={handleRemoveRSVP}>
-        <Text style={styles.clearButtonText}>Clear my response</Text>
+        <Text style={styles.clearButtonText}>Clear response</Text>
       </Pressable>
 
-      {/* Response Lists */}
-      {(["joining", "interested", "declined"] as Status[]).map((status) => {
-        const items = grouped[status];
-        if (items.length === 0) return null;
-        const config = STATUS_CONFIG[status];
-        return (
-          <View key={status} style={styles.responseSection}>
-            <Text style={[styles.responseSectionTitle, { color: config.color }]}>
-              {config.emoji} {config.label} ({items.length})
-            </Text>
-            {items.map((r) => (
+      {/* Party list */}
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>PARTY</Text>
+        <View style={styles.sectionLine} />
+        <Text style={styles.partyCount}>{totalResponses}/{responses.length}</Text>
+      </View>
+
+      {responses.length === 0 ? (
+        <Text style={styles.emptyText}>No responses yet</Text>
+      ) : (
+        <View style={styles.responseList}>
+          {responses.map((r) => {
+            const status = r.status as Status;
+            const config = STATUS_CONFIG[status] ?? { label: status.toUpperCase(), color: "#555" };
+            return (
               <View key={r._id} style={styles.responseRow}>
+                <View style={[styles.responseAvatar, { borderColor: config.color }]}>
+                  <Text style={styles.responseAvatarText}>
+                    {(r.displayName ?? r.username ?? "?")[0].toUpperCase()}
+                  </Text>
+                </View>
                 <Text style={styles.responseName}>
                   {r.displayName ?? r.username ?? "Unknown"}
                 </Text>
+                <Text style={[styles.responseStatus, { color: config.color }]}>
+                  {config.label}
+                </Text>
               </View>
-            ))}
-          </View>
-        );
-      })}
-
-      {responses.length === 0 && (
-        <View style={styles.centered}>
-          <Text style={styles.emptyText}>No responses yet — be the first!</Text>
+            );
+          })}
         </View>
       )}
     </ScrollView>
@@ -186,46 +213,71 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   beaconHeader: {
-    backgroundColor: "#1a1a2e",
-    borderRadius: 14,
-    padding: 20,
     gap: 10,
-    borderLeftWidth: 4,
-    borderLeftColor: "#fbbf24",
+  },
+  statusRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  liveBadge: {
+    backgroundColor: "#00ff88",
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 2,
+  },
+  liveBadgeText: {
+    fontFamily: "VT323",
+    fontSize: 14,
+    color: "#0a0a1a",
+    letterSpacing: 1,
+  },
+  creatorName: {
+    fontFamily: "VT323",
+    fontSize: 16,
+    color: "#00ff88",
+    letterSpacing: 1,
+  },
+  dot: {
+    color: "#00ff88",
   },
   beaconTitle: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#fbbf24",
+    fontFamily: "SpaceGrotesk",
+    fontSize: 28,
+    color: "#e8e0d4",
   },
   beaconDescription: {
+    fontFamily: "SpaceGrotesk",
     fontSize: 15,
-    color: "#e8e0d4",
+    color: "rgba(255,255,255,0.5)",
     lineHeight: 22,
   },
-  detailsRow: {
-    gap: 10,
-    marginTop: 6,
+  beaconMeta: {
+    fontFamily: "VT323",
+    fontSize: 18,
+    color: "#00ccff",
   },
-  detailItem: {
-    gap: 2,
-  },
-  detailLabel: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#666",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-  },
-  detailValue: {
-    fontSize: 14,
-    color: "#e8e0d4",
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginTop: 8,
   },
   sectionTitle: {
-    fontSize: 16,
-    fontWeight: "bold",
+    fontFamily: "VT323",
+    fontSize: 18,
     color: "#e8e0d4",
-    marginBottom: 4,
+    letterSpacing: 1,
+  },
+  sectionLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: "#1a3a2a",
+  },
+  partyCount: {
+    fontFamily: "VT323",
+    fontSize: 18,
+    color: "#00ff88",
   },
   rsvpRow: {
     flexDirection: "row",
@@ -234,21 +286,18 @@ const styles = StyleSheet.create({
   rsvpButton: {
     flex: 1,
     borderWidth: 2,
-    borderRadius: 12,
+    borderRadius: 4,
     padding: 14,
     alignItems: "center",
-    backgroundColor: "#1a1a2e",
-    gap: 4,
+    backgroundColor: "#0d1117",
   },
   rsvpButtonPressed: {
     opacity: 0.6,
   },
-  rsvpEmoji: {
-    fontSize: 24,
-  },
   rsvpLabel: {
-    fontSize: 12,
-    fontWeight: "bold",
+    fontFamily: "VT323",
+    fontSize: 18,
+    letterSpacing: 1,
   },
   clearButton: {
     alignSelf: "center",
@@ -256,33 +305,54 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   clearButtonText: {
-    color: "#666",
-    fontSize: 13,
+    fontFamily: "VT323",
+    color: "#555",
+    fontSize: 16,
   },
-  responseSection: {
-    backgroundColor: "#1a1a2e",
-    borderRadius: 12,
-    padding: 16,
-    gap: 8,
-  },
-  responseSectionTitle: {
-    fontSize: 15,
-    fontWeight: "bold",
-    marginBottom: 4,
+  responseList: {
+    gap: 4,
   },
   responseRow: {
-    paddingVertical: 6,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#333",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    backgroundColor: "#0d1117",
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: "#1a2a22",
+  },
+  responseAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 4,
+    backgroundColor: "#fbbf24",
+    borderWidth: 2,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  responseAvatarText: {
+    fontFamily: "SpaceGrotesk-Bold",
+    fontSize: 16,
+    color: "#0a0a1a",
   },
   responseName: {
+    fontFamily: "SpaceGrotesk",
     fontSize: 15,
     color: "#e8e0d4",
+    flex: 1,
+  },
+  responseStatus: {
+    fontFamily: "VT323",
+    fontSize: 16,
+    letterSpacing: 1,
   },
   emptyText: {
-    color: "#666",
-    fontSize: 14,
+    fontFamily: "VT323",
+    color: "#555",
+    fontSize: 16,
     textAlign: "center",
-    marginTop: 32,
+    marginTop: 16,
   },
 });

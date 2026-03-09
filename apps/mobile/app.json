@@ -15,7 +15,10 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "life.orbyt.mobile"
+      "bundleIdentifier": "life.orbyt.mobile",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -38,6 +41,13 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "owner": "joemiddie13",
+    "extra": {
+      "eas": {
+        "projectId": "b325a5a2-2534-4ee9-ad42-f7fb5c41a7dc"
+      },
+      "router": {}
     }
   }
 }

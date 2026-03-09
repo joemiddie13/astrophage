@@ -23,9 +23,15 @@ function formatTime(ts: number): string {
 
   const time = d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 
-  if (isToday) return `Today at ${time}`;
-  if (isTomorrow) return `Tomorrow at ${time}`;
-  return `${d.toLocaleDateString([], { month: "short", day: "numeric" })} at ${time}`;
+  if (isToday) return `Today ${time}`;
+  if (isTomorrow) return `Tomorrow ${time}`;
+  return `${d.toLocaleDateString([], { month: "short", day: "numeric" })} ${time}`;
+}
+
+function isLive(startTime?: number, endTime?: number): boolean {
+  if (!startTime) return false;
+  const now = Date.now();
+  return now >= startTime && (!endTime || now <= endTime);
 }
 
 type BeaconContent = {
@@ -33,9 +39,9 @@ type BeaconContent = {
   description?: string;
   locationAddress?: string;
   startTime?: number;
+  endTime?: number;
 };
 
-/** Shows beacons from canvases you own */
 function MyBeacons({ canvasId }: { canvasId: Id<"canvases"> }) {
   const router = useRouter();
   const beacons = useQuery(api.beacons.getActiveBeacons, { canvasId });
@@ -54,30 +60,42 @@ function MyBeacons({ canvasId }: { canvasId: Id<"canvases"> }) {
 
   return (
     <>
-      {beaconItems.map((item) => (
-        <Pressable
-          key={item._id}
-          style={({ pressed }) => [
-            styles.beaconCard,
-            pressed && styles.beaconCardPressed,
-          ]}
-          onPress={() => router.push(`/beacon/${item._id}`)}
-        >
-          <Text style={styles.beaconTitle}>
-            {item.content.title ?? "Beacon"}
-          </Text>
-          {item.content.startTime && (
-            <Text style={styles.beaconTime}>
-              {formatTime(item.content.startTime)}
+      {beaconItems.map((item) => {
+        const live = isLive(item.content.startTime, item.content.endTime);
+        return (
+          <Pressable
+            key={item._id}
+            style={({ pressed }) => [
+              styles.beaconCard,
+              pressed && styles.beaconCardPressed,
+            ]}
+            onPress={() => router.push(`/beacon/${item._id}`)}
+          >
+            {live && (
+              <View style={styles.liveBadge}>
+                <Text style={styles.liveBadgeText}>LIVE</Text>
+              </View>
+            )}
+            <Text style={styles.beaconTitle}>
+              {item.content.title ?? "Beacon"}
             </Text>
-          )}
-          {item.content.locationAddress && (
-            <Text style={styles.beaconLocation}>
-              📍 {item.content.locationAddress}
-            </Text>
-          )}
-        </Pressable>
-      ))}
+            <View style={styles.metaRow}>
+              {item.content.startTime && (
+                <Text style={styles.beaconMeta}>
+                  <Text style={styles.dot}>■ </Text>
+                  {formatTime(item.content.startTime)}
+                </Text>
+              )}
+              {item.content.locationAddress && (
+                <Text style={styles.beaconMeta}>
+                  <Text style={styles.dot}>■ </Text>
+                  {item.content.locationAddress}
+                </Text>
+              )}
+            </View>
+          </Pressable>
+        );
+      })}
     </>
   );
 }
@@ -88,14 +106,14 @@ export default function ProfileScreen() {
   const canvases = useQuery(api.access.getAccessibleCanvases);
 
   const myCanvases = useMemo(
-    () => canvases?.filter((c) => c.role === "owner") ?? [],
+    () => canvases?.filter((c: any) => c.role === "owner") ?? [],
     [canvases]
   );
 
   if (session.isPending) {
     return (
       <View style={[styles.container, styles.centered]}>
-        <ActivityIndicator color="#fbbf24" size="large" />
+        <ActivityIndicator color="#00ff88" size="large" />
       </View>
     );
   }
@@ -104,8 +122,11 @@ export default function ProfileScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      {/* Account card */}
-      <View style={styles.card}>
+      {/* Header */}
+      <Text style={styles.screenTitle}>PROFILE</Text>
+
+      {/* Avatar + Info */}
+      <View style={styles.profileSection}>
         <View style={styles.avatar}>
           <Text style={styles.avatarText}>
             {(user?.name ?? "?")[0].toUpperCase()}
@@ -115,8 +136,12 @@ export default function ProfileScreen() {
         <Text style={styles.username}>@{user?.username ?? "unknown"}</Text>
       </View>
 
-      {/* My beacons */}
-      <Text style={styles.sectionTitle}>My Beacons</Text>
+      {/* My Beacons section */}
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>MY BEACONS</Text>
+        <View style={styles.sectionLine} />
+      </View>
+
       <Pressable
         style={({ pressed }) => [
           styles.newBeaconButton,
@@ -124,11 +149,11 @@ export default function ProfileScreen() {
         ]}
         onPress={() => router.push("/beacon/create")}
       >
-        <Text style={styles.newBeaconPlus}>+</Text>
-        <Text style={styles.newBeaconText}>New Beacon</Text>
+        <Text style={styles.newBeaconText}>+ NEW BEACON</Text>
       </Pressable>
+
       <View style={styles.beaconList}>
-        {myCanvases.map((canvas) => (
+        {myCanvases.map((canvas: any) => (
           <MyBeacons key={canvas._id} canvasId={canvas._id} />
         ))}
       </View>
@@ -141,10 +166,10 @@ export default function ProfileScreen() {
         ]}
         onPress={() => authClient.signOut()}
       >
-        <Text style={styles.signOutText}>Sign Out</Text>
+        <Text style={styles.signOutText}>SIGN OUT</Text>
       </Pressable>
 
-      <Text style={styles.versionText}>Orbyt Mobile v0.0.1</Text>
+      <Text style={styles.versionText}>v0.0.1</Text>
     </ScrollView>
   );
 }
@@ -161,122 +186,154 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 24,
+    paddingTop: 60,
     gap: 20,
     paddingBottom: 60,
   },
-  card: {
-    backgroundColor: "#1a1a2e",
-    borderRadius: 16,
-    padding: 24,
+  screenTitle: {
+    fontFamily: "VT323",
+    fontSize: 24,
+    color: "#e8e0d4",
+    textAlign: "center",
+    letterSpacing: 2,
+  },
+  profileSection: {
     alignItems: "center",
-    gap: 6,
+    gap: 8,
   },
   avatar: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 80,
+    height: 80,
+    borderRadius: 4,
     backgroundColor: "#fbbf24",
+    borderWidth: 3,
+    borderColor: "#00ff88",
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 6,
+    marginBottom: 4,
   },
   avatarText: {
-    fontSize: 28,
-    fontWeight: "bold",
+    fontFamily: "SpaceGrotesk-Bold",
+    fontSize: 36,
     color: "#0a0a1a",
   },
   displayName: {
-    fontSize: 20,
-    fontWeight: "bold",
+    fontFamily: "SpaceGrotesk",
+    fontSize: 22,
     color: "#e8e0d4",
   },
   username: {
-    fontSize: 15,
-    color: "#999",
+    fontFamily: "VT323",
+    fontSize: 18,
+    color: "#00ff88",
+    letterSpacing: 1,
+  },
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginTop: 8,
   },
   sectionTitle: {
-    fontSize: 17,
-    fontWeight: "bold",
-    color: "#e8e0d4",
-    marginTop: 4,
+    fontFamily: "VT323",
+    fontSize: 18,
+    color: "#00ff88",
+    letterSpacing: 1,
+  },
+  sectionLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: "#1a3a2a",
   },
   beaconList: {
     gap: 10,
   },
   beaconCard: {
-    backgroundColor: "#1a1a2e",
-    borderRadius: 12,
+    backgroundColor: "#0d1117",
+    borderRadius: 4,
     padding: 14,
-    borderLeftWidth: 3,
-    borderLeftColor: "#fbbf24",
-    gap: 4,
+    borderWidth: 2,
+    borderColor: "#1a3a2a",
+    gap: 6,
+    position: "relative",
   },
   beaconCardPressed: {
     opacity: 0.7,
   },
-  beaconTitle: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#fbbf24",
+  liveBadge: {
+    position: "absolute",
+    top: -1,
+    right: -1,
+    backgroundColor: "#00ff88",
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderBottomLeftRadius: 4,
+    borderTopRightRadius: 2,
   },
-  beaconTime: {
-    fontSize: 13,
+  liveBadgeText: {
+    fontFamily: "VT323",
+    fontSize: 14,
+    color: "#0a0a1a",
+    letterSpacing: 1,
+  },
+  beaconTitle: {
+    fontFamily: "SpaceGrotesk",
+    fontSize: 18,
     color: "#e8e0d4",
   },
-  beaconLocation: {
-    fontSize: 12,
-    color: "#999",
+  metaRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 16,
+  },
+  beaconMeta: {
+    fontFamily: "VT323",
+    fontSize: 16,
+    color: "#00ccff",
+  },
+  dot: {
+    color: "#00ff88",
   },
   newBeaconButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 8,
     borderWidth: 2,
-    borderColor: "#fbbf24",
+    borderColor: "#00ff88",
     borderStyle: "dashed",
-    borderRadius: 12,
+    borderRadius: 4,
     padding: 14,
-    marginBottom: 10,
   },
   newBeaconButtonPressed: {
     opacity: 0.6,
   },
-  newBeaconPlus: {
-    color: "#fbbf24",
-    fontSize: 20,
-    fontWeight: "bold",
-  },
   newBeaconText: {
-    color: "#fbbf24",
-    fontSize: 15,
-    fontWeight: "bold",
-  },
-  emptyText: {
-    color: "#666",
-    fontSize: 14,
-    textAlign: "center",
+    fontFamily: "VT323",
+    color: "#00ff88",
+    fontSize: 20,
+    letterSpacing: 1,
   },
   signOutButton: {
-    backgroundColor: "#1a1a2e",
-    borderRadius: 12,
+    borderRadius: 4,
     padding: 16,
     alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#ef4444",
+    borderWidth: 2,
+    borderColor: "#ff3366",
     marginTop: 8,
   },
   signOutButtonPressed: {
     opacity: 0.6,
   },
   signOutText: {
-    color: "#ef4444",
-    fontSize: 16,
-    fontWeight: "bold",
+    fontFamily: "VT323",
+    color: "#ff3366",
+    fontSize: 20,
+    letterSpacing: 1,
   },
   versionText: {
+    fontFamily: "VT323",
     color: "#444",
-    fontSize: 12,
+    fontSize: 16,
     textAlign: "center",
     marginTop: 8,
   },

@@ -13,7 +13,6 @@ import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { api } from "@backend/_generated/api";
 import type { Id } from "@backend/_generated/dataModel";
 
-/** Format a timestamp to a readable date/time string */
 function formatTime(ts: number): string {
   const d = new Date(ts);
   const now = new Date();
@@ -24,9 +23,15 @@ function formatTime(ts: number): string {
 
   const time = d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 
-  if (isToday) return `Today at ${time}`;
-  if (isTomorrow) return `Tomorrow at ${time}`;
-  return `${d.toLocaleDateString([], { month: "short", day: "numeric" })} at ${time}`;
+  if (isToday) return `Today ${time}`;
+  if (isTomorrow) return `Tomorrow ${time}`;
+  return `${d.toLocaleDateString([], { month: "short", day: "numeric" })} ${time}`;
+}
+
+function isLive(startTime?: number, endTime?: number): boolean {
+  if (!startTime) return false;
+  const now = Date.now();
+  return now >= startTime && (!endTime || now <= endTime);
 }
 
 type BeaconContent = {
@@ -37,7 +42,6 @@ type BeaconContent = {
   endTime?: number;
 };
 
-/** Beacon list for a single canvas */
 function CanvasBeaconList({ canvasId }: { canvasId: Id<"canvases"> }) {
   const router = useRouter();
   const beacons = useQuery(api.beacons.getActiveBeacons, { canvasId });
@@ -57,36 +61,51 @@ function CanvasBeaconList({ canvasId }: { canvasId: Id<"canvases"> }) {
 
   return (
     <View style={styles.section}>
-      {beaconItems.map((item) => (
-        <Pressable
-          key={item._id}
-          style={({ pressed }) => [
-            styles.beaconCard,
-            pressed && styles.beaconCardPressed,
-          ]}
-          onPress={() => router.push(`/beacon/${item._id}`)}
-        >
-          <Text style={styles.beaconCreator}>{item.creatorName}</Text>
-          <Text style={styles.beaconTitle}>
-            {item.content.title ?? "Beacon"}
-          </Text>
-          {item.content.startTime && (
-            <Text style={styles.beaconTime}>
-              {formatTime(item.content.startTime)}
+      {beaconItems.map((item) => {
+        const live = isLive(item.content.startTime, item.content.endTime);
+        return (
+          <Pressable
+            key={item._id}
+            style={({ pressed }) => [
+              styles.beaconCard,
+              pressed && styles.beaconCardPressed,
+            ]}
+            onPress={() => router.push(`/beacon/${item._id}`)}
+          >
+            {live && (
+              <View style={styles.liveBadge}>
+                <Text style={styles.liveBadgeText}>LIVE</Text>
+              </View>
+            )}
+            <Text style={styles.beaconCreator}>
+              <Text style={styles.dot}>■ </Text>
+              {(item.creatorName ?? "unknown").toUpperCase()}
             </Text>
-          )}
-          {item.content.locationAddress && (
-            <Text style={styles.beaconLocation}>
-              📍 {item.content.locationAddress}
+            <Text style={styles.beaconTitle}>
+              {item.content.title ?? "Beacon"}
             </Text>
-          )}
-          {item.content.description && (
-            <Text style={styles.beaconDescription} numberOfLines={2}>
-              {item.content.description}
-            </Text>
-          )}
-        </Pressable>
-      ))}
+            <View style={styles.metaRow}>
+              {item.content.startTime && (
+                <Text style={styles.beaconMeta}>
+                  <Text style={styles.dot}>■ </Text>
+                  {formatTime(item.content.startTime)}
+                </Text>
+              )}
+              {item.content.locationAddress && (
+                <Text style={styles.beaconMeta}>
+                  <Text style={styles.dot}>■ </Text>
+                  {item.content.locationAddress}
+                </Text>
+              )}
+            </View>
+            {item.content.description && (
+              <Text style={styles.beaconDescription} numberOfLines={2}>
+                {item.content.description}
+              </Text>
+            )}
+          </Pressable>
+        );
+      })}
     </View>
   );
 }
@@ -95,17 +114,19 @@ export default function BeaconsScreen() {
   const router = useRouter();
   const canvases = useQuery(api.access.getAccessibleCanvases);
 
-  // Friends' beacons only — filter out canvases you own
   const friendCanvases = useMemo(
-    () => canvases?.filter((c) => c.role !== "owner") ?? [],
+    () => canvases?.filter((c: any) => c.role !== "owner") ?? [],
     [canvases]
   );
 
   if (canvases === undefined) {
     return (
       <View style={styles.wrapper}>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>BEACONS</Text>
+        </View>
         <View style={[styles.container, styles.centered]}>
-          <ActivityIndicator color="#fbbf24" size="large" />
+          <ActivityIndicator color="#00ff88" size="large" />
         </View>
         <FAB onPress={() => router.push("/beacon/create")} />
       </View>
@@ -115,9 +136,12 @@ export default function BeaconsScreen() {
   if (friendCanvases.length === 0) {
     return (
       <View style={styles.wrapper}>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>BEACONS</Text>
+        </View>
         <View style={[styles.container, styles.centered]}>
-          <Text style={styles.emptyIcon}>⚡</Text>
-          <Text style={styles.emptyTitle}>No friend beacons</Text>
+          <FontAwesome name="bolt" size={48} color="#00ff88" style={{ marginBottom: 16, opacity: 0.4 }} />
+          <Text style={styles.emptyTitle}>NO BEACONS YET</Text>
           <Text style={styles.emptySubtitle}>
             When friends create beacons, they'll show up here
           </Text>
@@ -129,12 +153,15 @@ export default function BeaconsScreen() {
 
   return (
     <View style={styles.wrapper}>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>BEACONS</Text>
+      </View>
       <FlatList
         style={styles.container}
         data={friendCanvases}
-        keyExtractor={(item) => item._id}
+        keyExtractor={(item: any) => item._id}
         contentContainerStyle={styles.listContent}
-        renderItem={({ item }) => (
+        renderItem={({ item }: any) => (
           <CanvasBeaconList canvasId={item._id} />
         )}
       />
@@ -149,7 +176,7 @@ function FAB({ onPress }: { onPress: () => void }) {
       style={({ pressed }) => [styles.fab, pressed && styles.fabPressed]}
       onPress={onPress}
     >
-      <FontAwesome name="plus" size={22} color="#0a0a1a" />
+      <FontAwesome name="plus" size={20} color="#0a0a1a" />
     </Pressable>
   );
 }
@@ -158,6 +185,20 @@ const styles = StyleSheet.create({
   wrapper: {
     flex: 1,
     backgroundColor: "#0a0a1a",
+  },
+  header: {
+    paddingTop: 60,
+    paddingHorizontal: 20,
+    paddingBottom: 12,
+    backgroundColor: "#0a0a1a",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  headerTitle: {
+    fontFamily: "GeistPixel",
+    fontSize: 32,
+    color: "#00ff88",
   },
   container: {
     flex: 1,
@@ -169,19 +210,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: 32,
   },
-  emptyIcon: {
-    fontSize: 48,
-    marginBottom: 16,
-  },
   emptyTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
+    fontFamily: "VT323",
+    fontSize: 22,
     color: "#e8e0d4",
     marginBottom: 8,
   },
   emptySubtitle: {
+    fontFamily: "SpaceGrotesk",
     fontSize: 14,
-    color: "#666",
+    color: "#555",
     textAlign: "center",
   },
   listContent: {
@@ -193,53 +231,79 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   beaconCard: {
-    backgroundColor: "#1a1a2e",
-    borderRadius: 12,
+    backgroundColor: "#0d1117",
+    borderRadius: 4,
     padding: 16,
-    borderLeftWidth: 3,
-    borderLeftColor: "#fbbf24",
-    gap: 6,
+    borderWidth: 2,
+    borderColor: "#1a3a2a",
+    gap: 8,
+    position: "relative",
   },
   beaconCardPressed: {
     opacity: 0.7,
   },
+  liveBadge: {
+    position: "absolute",
+    top: -1,
+    right: -1,
+    backgroundColor: "#00ff88",
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderBottomLeftRadius: 4,
+    borderTopRightRadius: 2,
+  },
+  liveBadgeText: {
+    fontFamily: "VT323",
+    fontSize: 14,
+    color: "#0a0a1a",
+    letterSpacing: 1,
+  },
   beaconCreator: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#999",
+    fontFamily: "VT323",
+    fontSize: 16,
+    color: "#00ff88",
+    letterSpacing: 1,
+  },
+  dot: {
+    color: "#00ff88",
   },
   beaconTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#fbbf24",
-  },
-  beaconTime: {
-    fontSize: 14,
+    fontFamily: "SpaceGrotesk",
+    fontSize: 22,
     color: "#e8e0d4",
   },
-  beaconLocation: {
-    fontSize: 13,
-    color: "#999",
+  metaRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 16,
+  },
+  beaconMeta: {
+    fontFamily: "VT323",
+    fontSize: 16,
+    color: "#00ccff",
   },
   beaconDescription: {
-    fontSize: 13,
-    color: "#888",
-    marginTop: 4,
+    fontFamily: "SpaceGrotesk",
+    fontSize: 14,
+    color: "rgba(255,255,255,0.5)",
+    marginTop: 2,
   },
   fab: {
     position: "absolute",
     bottom: 24,
     right: 20,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 52,
+    height: 52,
+    borderRadius: 4,
     backgroundColor: "#fbbf24",
+    borderWidth: 2,
+    borderColor: "#fbbf24",
     justifyContent: "center",
     alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
+    shadowColor: "#fbbf24",
+    shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.3,
-    shadowRadius: 6,
+    shadowRadius: 8,
     elevation: 8,
   },
   fabPressed: {

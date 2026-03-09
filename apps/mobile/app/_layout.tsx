@@ -7,6 +7,11 @@ import { ConvexReactClient, ConvexProvider } from "convex/react";
 import { ConvexBetterAuthProvider } from "@convex-dev/better-auth/react";
 import { authClient } from "@/src/lib/auth-client";
 import { useAuthGuard } from "@/src/hooks/useAuthGuard";
+import { VT323_400Regular } from "@expo-google-fonts/vt323";
+import {
+  SpaceGrotesk_400Regular,
+  SpaceGrotesk_700Bold,
+} from "@expo-google-fonts/space-grotesk";
 
 export { ErrorBoundary } from "expo-router";
 
@@ -26,6 +31,10 @@ const convex = new ConvexReactClient(
 export default function RootLayout() {
   const [loaded, error] = useFonts({
     SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
+    GeistPixel: require("../assets/fonts/GeistPixel-Square.ttf"),
+    VT323: VT323_400Regular,
+    SpaceGrotesk: SpaceGrotesk_400Regular,
+    "SpaceGrotesk-Bold": SpaceGrotesk_700Bold,
     ...FontAwesome.font,
   });
 
@@ -59,8 +68,8 @@ function RootLayoutNav() {
     <Stack
       screenOptions={{
         headerStyle: { backgroundColor: "#0a0a1a" },
-        headerTintColor: "#fbbf24",
-        headerTitleStyle: { fontWeight: "bold" },
+        headerTintColor: "#00ff88",
+        headerTitleStyle: { fontFamily: "VT323", fontSize: 20 },
         contentStyle: { backgroundColor: "#0a0a1a" },
       }}
     >
@@ -71,11 +80,11 @@ function RootLayoutNav() {
       />
       <Stack.Screen
         name="beacon/[id]"
-        options={{ title: "Beacon", presentation: "card" }}
+        options={{ title: "BEACON", presentation: "card", headerBackTitle: "Back" }}
       />
       <Stack.Screen
         name="beacon/create"
-        options={{ title: "New Beacon", presentation: "modal" }}
+        options={{ title: "NEW BEACON", presentation: "modal" }}
       />
     </Stack>
   );

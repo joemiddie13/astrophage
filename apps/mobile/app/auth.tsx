@@ -62,8 +62,6 @@ export default function AuthScreen() {
         return;
       }
 
-      // Create Orbyt user record + personal canvas.
-      // Retry because auth token takes time to propagate to Convex.
       const maxRetries = 5;
       for (let i = 0; i < maxRetries; i++) {
         try {
@@ -90,18 +88,44 @@ export default function AuthScreen() {
       style={styles.container}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
-      <View style={styles.card}>
-        <Text style={styles.title}>Orbyt</Text>
-        <Text style={styles.subtitle}>
-          {mode === "signin" ? "Welcome back" : "Create your account"}
+      {/* Title area */}
+      <View style={styles.titleArea}>
+        <Text style={styles.title}>ORBYT</Text>
+        <View style={styles.titleDivider} />
+        <Text style={styles.tagline}>
+          See your people. Make plans.{"\n"}Close the app.
         </Text>
+      </View>
+
+      {/* Auth card */}
+      <View style={styles.card}>
+        {/* Tab switcher */}
+        <View style={styles.tabRow}>
+          <Pressable
+            style={[styles.tab, mode === "signin" && styles.tabActive]}
+            onPress={() => { setMode("signin"); setError(""); }}
+          >
+            <Text style={[styles.tabText, mode === "signin" && styles.tabTextActive]}>
+              SIGN IN
+            </Text>
+          </Pressable>
+          <Pressable
+            style={[styles.tab, mode === "signup" && styles.tabActive]}
+            onPress={() => { setMode("signup"); setError(""); }}
+          >
+            <Text style={[styles.tabText, mode === "signup" && styles.tabTextActive]}>
+              SIGN UP
+            </Text>
+          </Pressable>
+        </View>
 
         {error ? <Text style={styles.error}>{error}</Text> : null}
 
+        <Text style={styles.inputLabel}>USERNAME</Text>
         <TextInput
           style={styles.input}
-          placeholder="Username"
-          placeholderTextColor="#666"
+          placeholder="Enter username"
+          placeholderTextColor="#555"
           value={username}
           onChangeText={setUsername}
           autoCapitalize="none"
@@ -109,19 +133,23 @@ export default function AuthScreen() {
         />
 
         {mode === "signup" && (
-          <TextInput
-            style={styles.input}
-            placeholder="Display name (optional)"
-            placeholderTextColor="#666"
-            value={displayName}
-            onChangeText={setDisplayName}
-          />
+          <>
+            <Text style={styles.inputLabel}>DISPLAY NAME</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Display name (optional)"
+              placeholderTextColor="#555"
+              value={displayName}
+              onChangeText={setDisplayName}
+            />
+          </>
         )}
 
+        <Text style={styles.inputLabel}>PASSWORD</Text>
         <TextInput
           style={styles.input}
-          placeholder="Password"
-          placeholderTextColor="#666"
+          placeholder="Enter password"
+          placeholderTextColor="#555"
           value={password}
           onChangeText={setPassword}
           secureTextEntry
@@ -135,25 +163,14 @@ export default function AuthScreen() {
           {loading ? (
             <ActivityIndicator color="#0a0a1a" />
           ) : (
-            <Text style={styles.buttonText}>
-              {mode === "signin" ? "Sign In" : "Sign Up"}
-            </Text>
+            <Text style={styles.buttonText}>CONNECT</Text>
           )}
         </Pressable>
-
-        <Pressable
-          onPress={() => {
-            setMode(mode === "signin" ? "signup" : "signin");
-            setError("");
-          }}
-        >
-          <Text style={styles.switchText}>
-            {mode === "signin"
-              ? "Don't have an account? Sign up"
-              : "Already have an account? Sign in"}
-          </Text>
-        </Pressable>
       </View>
+
+      <Text style={styles.footer}>
+        NO ADS. NO ALGORITHM. JUST YOUR PEOPLE.
+      </Text>
     </KeyboardAvoidingView>
   );
 }
@@ -166,43 +183,91 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: 24,
   },
+  titleArea: {
+    alignItems: "center",
+    marginBottom: 32,
+    gap: 12,
+  },
+  title: {
+    fontFamily: "GeistPixel",
+    fontSize: 56,
+    color: "#00ff88",
+    textShadowColor: "rgba(0,255,136,0.3)",
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 20,
+  },
+  titleDivider: {
+    width: 80,
+    height: 3,
+    backgroundColor: "#00ff88",
+    borderRadius: 2,
+  },
+  tagline: {
+    fontFamily: "VT323",
+    fontSize: 20,
+    color: "#00ff88",
+    textAlign: "center",
+    lineHeight: 26,
+    letterSpacing: 1,
+  },
   card: {
     width: "100%",
     maxWidth: 360,
-    backgroundColor: "#1a1a2e",
-    borderRadius: 16,
-    padding: 32,
-    gap: 16,
+    backgroundColor: "#0d1117",
+    borderRadius: 4,
+    padding: 24,
+    gap: 12,
+    borderWidth: 2,
+    borderColor: "#1a3a2a",
   },
-  title: {
-    fontSize: 32,
-    fontWeight: "bold",
-    color: "#fbbf24",
-    textAlign: "center",
+  tabRow: {
+    flexDirection: "row",
+    marginBottom: 4,
   },
-  subtitle: {
+  tab: {
+    flex: 1,
+    paddingVertical: 10,
+    alignItems: "center",
+    borderBottomWidth: 2,
+    borderBottomColor: "#1a3a2a",
+  },
+  tabActive: {
+    borderBottomColor: "#00ff88",
+  },
+  tabText: {
+    fontFamily: "VT323",
+    fontSize: 18,
+    color: "#555",
+    letterSpacing: 1,
+  },
+  tabTextActive: {
+    color: "#e8e0d4",
+  },
+  inputLabel: {
+    fontFamily: "VT323",
     fontSize: 16,
-    color: "#999",
-    textAlign: "center",
-    marginBottom: 8,
+    color: "#00ff88",
+    letterSpacing: 1,
   },
   error: {
-    color: "#ef4444",
-    fontSize: 14,
+    fontFamily: "VT323",
+    color: "#ff3366",
+    fontSize: 16,
     textAlign: "center",
   },
   input: {
     backgroundColor: "#0a0a1a",
-    borderRadius: 8,
+    borderRadius: 4,
     padding: 14,
+    fontFamily: "SpaceGrotesk",
     fontSize: 16,
     color: "#e8e0d4",
-    borderWidth: 1,
-    borderColor: "#333",
+    borderWidth: 2,
+    borderColor: "#1a3a2a",
   },
   button: {
-    backgroundColor: "#fbbf24",
-    borderRadius: 8,
+    backgroundColor: "#00ff88",
+    borderRadius: 4,
     padding: 14,
     alignItems: "center",
     marginTop: 8,
@@ -211,14 +276,17 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   buttonText: {
+    fontFamily: "VT323",
     color: "#0a0a1a",
-    fontSize: 16,
-    fontWeight: "bold",
+    fontSize: 22,
+    letterSpacing: 2,
   },
-  switchText: {
-    color: "#fbbf24",
-    textAlign: "center",
+  footer: {
+    fontFamily: "VT323",
     fontSize: 14,
-    marginTop: 4,
+    color: "#444",
+    textAlign: "center",
+    marginTop: 32,
+    letterSpacing: 1,
   },
 });
